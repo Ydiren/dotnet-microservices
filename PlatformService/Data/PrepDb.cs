@@ -1,18 +1,32 @@
+using Microsoft.EntityFrameworkCore;
 using PlatformService.Models;
 
 namespace PlatformService.Data;
 
 public static class PrepDb
 {
-    public static async Task PrepPopulation(IApplicationBuilder app)
+    public static async Task PrepPopulation(IApplicationBuilder app, bool isProduction)
     {
         await using var serviceScope = app.ApplicationServices.CreateAsyncScope();
 
-        await SeedData(serviceScope.ServiceProvider.GetService<AppDbContext>());
+        await SeedData(serviceScope.ServiceProvider.GetService<AppDbContext>(), isProduction);
     }
 
-    private static async Task SeedData(AppDbContext context)
+    private static async Task SeedData(AppDbContext context, bool isProduction)
     {
+        if (isProduction)
+        {
+            Console.WriteLine("--> Attempting to apply migrations...");
+            try
+            {
+                await context.Database.MigrateAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"--> Could not run migrations: {e.Message}");
+            }
+        } 
+        
         if (context.Platforms.Any())
         {
             Console.WriteLine("--> We already have data.");
